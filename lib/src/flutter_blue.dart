@@ -30,10 +30,16 @@ class FlutterBlue {
   static FlutterBlue get instance => _instance;
 
   /// Checks whether the device supports Bluetooth
-  Future<bool> get isAvailable => _channel.invokeMethod('isAvailable');
+  Future<bool> get isAvailable async {
+    final bool isAvailable = await _channel.invokeMethod('isAvailable');
+    return isAvailable;
+  }
 
   /// Checks if Bluetooth functionality is turned on
-  Future<bool> get isOn => _channel.invokeMethod('isOn');
+  Future<bool> get isOn async {
+    final bool isOn = await _channel.invokeMethod('isOn');
+    return isOn;
+  }
 
   /// Gets the current state of the Bluetooth module
   Future<BluetoothState> get state {
@@ -66,7 +72,7 @@ class FlutterBlue {
     StreamController controller;
     controller = new StreamController(
       onListen: () {
-        if(timeout != null) {
+        if (timeout != null) {
           new Future.delayed(timeout, () => controller.close());
         }
       },
@@ -106,8 +112,9 @@ class FlutterBlue {
     StreamController controller;
     controller = new StreamController<BluetoothDeviceState>(
       onListen: () {
-        if(timeout != null) {
-          new Future.delayed(timeout, () => (!connected) ? controller.close(): null);
+        if (timeout != null) {
+          new Future.delayed(
+              timeout, () => (!connected) ? controller.close() : null);
         }
       },
       onCancel: () {
@@ -119,22 +126,23 @@ class FlutterBlue {
     await _channel.invokeMethod('connect', request.writeToBuffer());
 
     subscription = device.onStateChanged().listen(
-        (data) {
-          if(data == BluetoothDeviceState.connected) {
-            print('connected!');
-            connected = true;
-          }
-          controller.add(data);
-        },
-          onError: controller.addError,
-          onDone: controller.close,
-        );
+      (data) {
+        if (data == BluetoothDeviceState.connected) {
+          print('connected!');
+          connected = true;
+        }
+        controller.add(data);
+      },
+      onError: controller.addError,
+      onDone: controller.close,
+    );
 
     yield* controller.stream;
   }
 
   /// Cancels connection to the Bluetooth Device
-  Future _cancelConnection(BluetoothDevice device) => _channel.invokeMethod('disconnect', device.id.toString());
+  Future _cancelConnection(BluetoothDevice device) =>
+      _channel.invokeMethod('disconnect', device.id.toString());
 }
 
 /// State of the bluetooth adapter.
