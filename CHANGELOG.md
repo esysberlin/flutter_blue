@@ -1,3 +1,18 @@
+## 0.4.1
+* Fixed bug where setNotifyValue wasn't properly awaitable.
+* Various UI bug fixes to example app.
+* Removed unnecessary intl dependencies in example app.
+
+## 0.4.0
+* **Breaking change**. Manufacturer Data is now a `Map` of manufacturer ID's.
+* Service UUID's, service data, tx power level packets fixed in advertising data.
+* Example app updated to show advertising data.
+* Various other bug fixes.
+
+## 0.3.4
+* Updated to use the latest protobuf (^0.9.0+1)
+* Updated other dependencies
+
 ## 0.3.3
 * `scan` `withServices` to filter by service UUID's (iOS)
 * Error handled when trying to scan with adapter off (Android)
@@ -28,7 +43,7 @@
 * Bug fixes
 
 ## 0.2.2
-* BREAKING CHANGES
+* **Breaking changes**:
 * `startScan` renamed to `scan`
 * `ScanResult` now returns a `BluetoothDevice`
 * `connect` now takes a `BluetoothDevice` and returns Stream<BluetoothDeviceState>
@@ -36,7 +51,7 @@
 * Automatic disconnect on deviceConnection.cancel()
 
 ## 0.2.1
-* BREAKING CHANGE: removed `stopScan` from API, use `scanSubscription.cancel()` instead
+* **Breaking change**. Removed `stopScan` from API, use `scanSubscription.cancel()` instead
 * Automatically stops scan when `startScan` subscription is canceled (thanks to @brianegan)
 * Added `timeout` parameter to `startScan`
 * Updated example app to show new scan functionality

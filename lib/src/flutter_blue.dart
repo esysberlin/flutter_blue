@@ -196,23 +196,28 @@ class ScanResult {
 
 class AdvertisementData {
   final String localName;
-  final List<int> manufacturerData;
-  final Map<String, List<int>> serviceData;
   final int txPowerLevel;
   final bool connectable;
+  final Map<int, List<int>> manufacturerData;
+  final Map<String, List<int>> serviceData;
+  final List<String> serviceUuids;
 
   AdvertisementData(
       {this.localName,
+      this.txPowerLevel,
+      this.connectable,
       this.manufacturerData,
       this.serviceData,
-      this.txPowerLevel,
-      this.connectable});
+      this.serviceUuids});
 
   AdvertisementData.fromProto(protos.AdvertisementData p)
       : localName = p.localName,
-        manufacturerData = p.manufacturerData,
+        txPowerLevel =
+            (p.txPowerLevel.hasValue()) ? p.txPowerLevel.value : null,
+        connectable = p.connectable,
+        manufacturerData = new Map.fromIterable(p.manufacturerData,
+            key: (v) => v.key, value: (v) => v.value),
         serviceData = new Map.fromIterable(p.serviceData,
             key: (v) => v.key, value: (v) => v.value),
-        txPowerLevel = p.txPowerLevel,
-        connectable = p.connectable;
+        serviceUuids = p.serviceUuids;
 }

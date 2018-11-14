@@ -58,7 +58,7 @@ public class FlutterBluePlugin implements MethodCallHandler, RequestPermissionsR
     private static final String TAG = "FlutterBluePlugin";
     private static final String NAMESPACE = "plugins.pauldemarco.com/flutter_blue";
     private static final int REQUEST_COARSE_LOCATION_PERMISSIONS = 1452;
-    static final private UUID CCCD_ID = UUID.fromString("000002902-0000-1000-8000-00805f9b34fb");
+    static final private UUID CCCD_ID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
     private final Registrar registrar;
     private final MethodChannel channel;
     private final EventChannel stateChannel;
@@ -459,6 +459,10 @@ public class FlutterBluePlugin implements MethodCallHandler, RequestPermissionsR
                     value = BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE;
                 }
 
+                if(!gattServer.setCharacteristicNotification(characteristic, request.getEnable())){
+                    result.error("set_notification_error", "could not set characteristic notifications to :" + request.getEnable(), null);
+                    return;
+                }
 
                 if(!cccDescriptor.setValue(value)) {
                     result.error("set_notification_error", "error when setting the descriptor value to: " + value, null);
@@ -470,18 +474,7 @@ public class FlutterBluePlugin implements MethodCallHandler, RequestPermissionsR
                     return;
                 }
 
-                if(!gattServer.setCharacteristicNotification(characteristic, request.getEnable())){
-                    result.error("set_notification_error", "could not set characteristic notifications to :" + request.getEnable(), null);
-                    return;
-                }
-
                 result.success(null);
-
-                // SetNotificationResponse
-                Protos.SetNotificationResponse.Builder q = Protos.SetNotificationResponse.newBuilder();
-                q.setRemoteId(gattServer.getDevice().getAddress());
-                q.setCharacteristic(ProtoMaker.from(characteristic, gattServer));
-                channel.invokeMethod("SetNotificationResponse", q.build().toByteArray());
                 break;
             }
 
@@ -628,7 +621,7 @@ public class FlutterBluePlugin implements MethodCallHandler, RequestPermissionsR
                 public void onScanResult(int callbackType, ScanResult result) {
                     super.onScanResult(callbackType, result);
                     if(scanResultsSink != null) {
-                        Protos.ScanResult scanResult = ProtoMaker.from(result.getDevice(), result.getScanRecord().getBytes(), result.getRssi());
+                        Protos.ScanResult scanResult = ProtoMaker.from(result.getDevice(), result);
                         scanResultsSink.success(scanResult.toByteArray());
                     }
                 }
@@ -809,7 +802,7 @@ public class FlutterBluePlugin implements MethodCallHandler, RequestPermissionsR
 
         @Override
         public void onDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
-            Log.d(TAG, "onDescriptorRead: ");
+            Log.d(TAG, "onDescriptorRead: " + descriptor.getUuid().toString() + " status: " + status);
             if(descriptorReadSink != null) {
                 // Rebuild the ReadAttributeRequest and send back along with response
                 Protos.ReadDescriptorRequest.Builder q = Protos.ReadDescriptorRequest.newBuilder();
@@ -835,11 +828,12 @@ public class FlutterBluePlugin implements MethodCallHandler, RequestPermissionsR
                 p.setValue(ByteString.copyFrom(descriptor.getValue()));
                 descriptorReadSink.success(p.build().toByteArray());
             }
+
         }
 
         @Override
         public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
-            Log.d(TAG, "onDescriptorWrite: ");
+            Log.d(TAG, "onDescriptorWrite: " + descriptor.getUuid().toString() + " status: " + status);
             Protos.WriteDescriptorRequest.Builder request = Protos.WriteDescriptorRequest.newBuilder();
             request.setRemoteId(gatt.getDevice().getAddress());
             request.setDescriptorUuid(descriptor.getUuid().toString());
@@ -849,6 +843,14 @@ public class FlutterBluePlugin implements MethodCallHandler, RequestPermissionsR
             p.setRequest(request);
             p.setSuccess(status == BluetoothGatt.GATT_SUCCESS);
             channel.invokeMethod("WriteDescriptorResponse", p.build().toByteArray());
+
+            if(descriptor.getUuid().compareTo(CCCD_ID) == 0) {
+                // SetNotificationResponse
+                Protos.SetNotificationResponse.Builder q = Protos.SetNotificationResponse.newBuilder();
+                q.setRemoteId(gatt.getDevice().getAddress());
+                q.setCharacteristic(ProtoMaker.from(descriptor.getCharacteristic(), gatt));
+                channel.invokeMethod("SetNotificationResponse", q.build().toByteArray());
+            }
         }
 
         @Override
